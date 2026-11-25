@@ -6,6 +6,7 @@ const PRESERVED_TOKEN_REGEX =
  * Escapes LinkedIn Little Text Format reserved characters while keeping valid
  * interactive #hashtags and @[Name](urn:li:...) mentions unescaped.
  */
+
 export function formatCommentaryForLinkedIn(rawText) {
   const input = String(rawText || '').replace(/\r\n/g, '\n');
   let result = '';
@@ -36,6 +37,7 @@ export function formatCommentaryForLinkedIn(rawText) {
 /**
  * Parses HTTP Retry-After header (seconds or HTTP-date) into milliseconds.
  */
+
 export function parseRetryAfterMs(headerValue, nowMs = Date.now()) {
   if (!headerValue) return null;
   const trimmed = String(headerValue).trim();
@@ -104,6 +106,7 @@ function decodeJwtPayload(jwt) {
 /**
  * HTTP client for LinkedIn OAuth 2.0, OpenID /v2/userinfo, and REST /rest/posts.
  */
+
 export class LinkedInClient {
   constructor({
     oauthBaseUrl = 'https://www.linkedin.com',
