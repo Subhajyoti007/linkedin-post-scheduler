@@ -1,0 +1,15 @@
+# Environment & local secrets
+.env
+.env.local
+
+# Runtime database, master key, and log files
+.data/
+logs/
+*.db
+*.db-shm
+*.db-wal
+
+# Dependencies & OS artifacts
+node_modules/
+.DS_Store
+Thumbs.db

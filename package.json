@@ -1,0 +1,23 @@
+{
+  "name": "linkedin-post-scheduler",
+  "version": "1.0.0",
+  "description": "Scheduled LinkedIn post publisher with OAuth 2.0, encrypted token storage, background worker, exponential-backoff retries, and duplicate-post protection.",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node --no-warnings=ExperimentalWarning src/index.js",
+    "start:mock": "node --no-warnings=ExperimentalWarning src/index.js --mock",
+    "test": "node --no-warnings=ExperimentalWarning --test test/*.test.js"
+  },
+  "keywords": [
+    "linkedin",
+    "oauth2",
+    "scheduler",
+    "background-worker",
+    "sqlite"
+  ],
+  "license": "MIT"
+}
