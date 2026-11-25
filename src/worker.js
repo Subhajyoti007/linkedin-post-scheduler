@@ -4,6 +4,7 @@ import { LinkedInApiError } from './linkedin.js';
 /**
  * Computes strictly increasing exponential backoff delay, honoring any larger Retry-After header.
  */
+
 export function computeRetryDelayMs({
   attemptNumber,
   baseDelayMs,
@@ -24,6 +25,7 @@ export function computeRetryDelayMs({
  * Background worker that claims due scheduled posts, publishes via LinkedIn API,
  * retries temporary errors with increasing delays, and guarantees zero duplicate posts.
  */
+
 export class PostWorker {
   constructor({
     db,
@@ -131,6 +133,7 @@ export class PostWorker {
   /**
    * Processes all currently due scheduled posts. Safe against concurrent re-entry.
    */
+  
   async runOnce(nowMs = Date.now()) {
     if (this.#activeTick) {
       return this.#activeTick;
@@ -169,6 +172,7 @@ export class PostWorker {
     const attemptNumber = post.attemptCount;
 
     // Defense-in-depth duplicate protection before making any external network call
+    
     if (post.publishedPostUrn) {
       this.logger.warn(
         'worker',
@@ -213,6 +217,7 @@ export class PostWorker {
       }
 
       // Refresh token proactively if expired and refresh_token is available
+      
       if (tokens.expiresAt <= new Date().toISOString()) {
         tokens = await this.#tryRefreshToken(tokens, post.id);
       }
