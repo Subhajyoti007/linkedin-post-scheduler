@@ -14,6 +14,7 @@ const SENSITIVE_KEY_PATTERN =
 /**
  * Recursively scrubs credentials, tokens, and authorization values before logging.
  */
+
 export function redactSecrets(value, seen = new WeakSet()) {
   if (value === null || value === undefined) return value;
   if (typeof value === 'string') {
@@ -48,6 +49,7 @@ export function redactSecrets(value, seen = new WeakSet()) {
 /**
  * Structured JSON logger persisting to stdout, rotating log file, and SQLite app_logs.
  */
+
 export class AppLogger {
   constructor({ level = 'info', logFilePath = null, silent = false, dbSink = null } = {}) {
     this.minLevel = LEVELS[level] ?? LEVELS.info;
