@@ -14,6 +14,7 @@ function escapeHtml(str) {
  * Local Mock LinkedIn OAuth 2.0 + /v2/userinfo + /rest/posts HTTP server.
  * Only started when LINKEDIN_MODE=mock or in automated tests.
  */
+
 export class MockLinkedInServer {
   constructor({ host = '127.0.0.1', port = 0 } = {}) {
     this.host = host;
