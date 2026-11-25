@@ -13,6 +13,7 @@ import { MockLinkedInServer } from './mock-linkedin.js';
  * Bootstraps and coordinates the application lifecycle.
  * Can be called programmatically in tests with custom config overrides.
  */
+
 export async function startApplication(configOverrides = {}) {
   const config = loadConfig(configOverrides);
   const cipher = new TokenCipher({
@@ -43,6 +44,7 @@ export async function startApplication(configOverrides = {}) {
   }
 
   // Optional pre-seeding from .env when DB does not have credentials yet
+  
   const existingOAuth = db.getOAuthConfigStatus();
   if (!existingOAuth.configured && config.linkedinClientId && config.linkedinClientSecret) {
     db.saveOAuthConfig({
