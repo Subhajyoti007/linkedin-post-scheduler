@@ -70,6 +70,7 @@ function mapPostRow(row, attempts = []) {
 /**
  * SQLite persistence layer backed by Node's built-in node:sqlite DatabaseSync.
  */
+
 export class AppDatabase {
   constructor({ databasePath, cipher }) {
     if (!cipher) throw new Error('TokenCipher instance is required.');
@@ -403,7 +404,9 @@ export class AppDatabase {
     const now = new Date().toISOString();
 
     return this.withTransaction(() => {
+      
       // Layer 1: Idempotency key guard (prevents double-click / network retry duplicate inserts)
+      
       const byKey = this.db
         .prepare('SELECT * FROM posts WHERE idempotency_key = ?')
         .get(idempotencyKey);
@@ -421,6 +424,7 @@ export class AppDatabase {
       }
 
       // Layer 2: Active / already-published identical content guard per author
+      
       const duplicate = this.db
         .prepare(
           `SELECT id, status, scheduled_at, published_post_urn
@@ -546,13 +550,14 @@ export class AppDatabase {
     });
   }
 
-  // -------------------- Worker Atomic Claim & Transitions --------------------
+  // -------------------- Worker Atomic Claim and Transitions --------------------
 
   /**
    * Atomically claims the next due post for processing.
    * Ensures at most one worker ever processes a scheduled post, and never touches
    * any post that already has a published_post_urn.
    */
+  
   claimNextDuePost({ workerId, nowIso = new Date().toISOString() }) {
     return this.withTransaction(() => {
       const candidate = this.db
@@ -766,6 +771,7 @@ export class AppDatabase {
    * Marks them "failed" rather than automatically re-sending so an interrupted
    * HTTP call cannot cause duplicate LinkedIn posts.
    */
+  
   recoverStaleProcessingPosts({ lockTimeoutMs, nowMs = Date.now() }) {
     const cutoffIso = new Date(nowMs - lockTimeoutMs).toISOString();
     const nowIso = new Date(nowMs).toISOString();
