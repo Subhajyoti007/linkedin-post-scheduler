@@ -12,6 +12,7 @@ const VERSION_PREFIX = 'v1';
  * Supports 64-char hex, base64-encoded 32 bytes, or arbitrary passphrase via scrypt.
  * Falls back to persisting an auto-generated random key file when none is provided.
  */
+
 export function resolveMasterKey({ tokenEncryptionKey = '', masterKeyPath } = {}) {
   const rawKey = String(tokenEncryptionKey || '').trim();
   if (rawKey) {
@@ -49,6 +50,7 @@ export function resolveMasterKey({ tokenEncryptionKey = '', masterKeyPath } = {}
 /**
  * Authenticated encryption wrapper (AES-256-GCM) for OAuth tokens and secrets at rest.
  */
+
 export class TokenCipher {
   constructor(options = {}) {
     const { key, source } = resolveMasterKey(options);
@@ -96,6 +98,7 @@ export class TokenCipher {
 /**
  * Produces a deterministic SHA-256 hash of normalized post text for duplicate detection.
  */
+
 export function hashPostContent(content) {
   const normalized = String(content || '')
     .replace(/\r\n/g, '\n')
