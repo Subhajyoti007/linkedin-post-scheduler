@@ -59,6 +59,7 @@ async function readJsonBody(req, maxBytes = 1024 * 1024) {
 /**
  * HTTP Server exposing OAuth 2.0 routes, scheduling REST API, logs, and static UI.
  */
+
 export class AppServer {
   constructor({
     host = '127.0.0.1',
@@ -118,6 +119,7 @@ export class AppServer {
     const method = req.method || 'GET';
 
     // Health check
+    
     if (method === 'GET' && pathname === '/api/health') {
       return sendJson(res, 200, {
         ok: true,
@@ -129,6 +131,7 @@ export class AppServer {
     }
 
     // OAuth configuration & connection status (secrets never exposed)
+    
     if (method === 'GET' && pathname === '/api/oauth/status') {
       const cfg = this.db.getOAuthConfigStatus();
       if (!cfg.redirectUri) {
@@ -166,6 +169,7 @@ export class AppServer {
     }
 
     // Step 1 of 3-legged OAuth 2.0
+    
     if (method === 'GET' && pathname === '/auth/linkedin') {
       const oauthConfig = this.db.getDecryptedOAuthConfig();
       if (!oauthConfig) {
@@ -194,6 +198,7 @@ export class AppServer {
     }
 
     // Step 2 of 3-legged OAuth 2.0
+    
     if (method === 'GET' && pathname === '/auth/linkedin/callback') {
       const oauthError = url.searchParams.get('error');
       const oauthErrorDesc = url.searchParams.get('error_description');
@@ -393,6 +398,7 @@ export class AppServer {
     }
 
     // Static assets (index.html, styles.css, app.js)
+    
     if (method === 'GET') {
       return this.#serveStatic(pathname, res);
     }
