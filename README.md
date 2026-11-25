@@ -10,21 +10,29 @@ A lightweight, self-contained Node.js application that connects to LinkedIn via 
   - Users enter their LinkedIn `Client ID`, `Client Secret`, and `Redirect URI` in the web UI (or pre-seed via `.env`).
   - CSRF `state` tokens stored in SQLite with a 10-minute TTL and one-time consumption.
   - Resolves member identity (`sub`, name, email) via `/v2/userinfo` to construct `urn:li:person:{sub}`.
+  
 - **Secure Token Storage**
   - OAuth `client_secret`, `access_token`, and `refresh_token` are encrypted at rest with **AES-256-GCM** (`v1:<iv>:<authTag>:<ciphertext>`) using unique random 96-bit IVs per write.
   - Decrypted tokens are never returned by API endpoints or written to logs.
+  
 - **Database-Backed Scheduling & Background Worker**
   - Built on Node's native `node:sqlite` (`WAL` mode, `BEGIN IMMEDIATE` write serialization).
   - Enforces the exact post lifecycle statuses: `scheduled`, `processing`, `published`, `failed`.
+  
 - **Automatic Retries with Increasing Delays**
   - Classifies LinkedIn API errors into **temporary** (`408`, `429`, `500`, `502`, `503`, `504`, network timeouts/resets) vs **permanent** (`400`, `401`, `403`, `404`, `422`).
   - Retries temporary errors automatically using exponential backoff (`baseDelayMs * 2^(attempt - 1)`, capped at `retryMaxDelayMs`) and honors larger `Retry-After` headers.
   - Attempts automatic OAuth token refresh on `401` or expiry when a `refresh_token` is present.
+  
 - **Multi-Layer Duplicate-Post Protection**
   1. **API Idempotency Key (`UNIQUE`)**: Prevents double-click or client retry duplicate inserts.
+  
   2. **Content + Author Deduplication**: Computes normalized `SHA-256` `content_hash` and blocks scheduling duplicate content while an identical `scheduled`, `processing`, or `published` post exists for the same `author_urn`.
+  
   3. **Atomic Worker Claiming**: Uses `UPDATE ... WHERE status = 'scheduled' AND next_attempt_at <= ? AND published_post_urn IS NULL` inside `BEGIN IMMEDIATE` so concurrent workers/ticks can never double-claim a post.
+  
   4. **Crash-Lock Safety & LinkedIn `422` Handling**: Recovers stale `processing` locks as `failed` (`STALE_LOCK_INTERRUPTED`) rather than risking duplicate transmission, and detects LinkedIn `422` duplicate rejections without retrying.
+  
 - **Structured Redacting Logs**
   - Writes JSON logs to stdout, `.data/logs/app.log`, and SQLite `app_logs` (viewable in the UI), automatically scrubbing secrets and `Bearer` tokens.
 - **Optional Local Sandbox Mode (`--mock`)**
