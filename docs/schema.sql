@@ -2,6 +2,7 @@
 -- Applied automatically on startup by src/db.js
 
 -- 1. User-supplied LinkedIn OAuth application configuration
+
 CREATE TABLE IF NOT EXISTS oauth_configs (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   client_id TEXT NOT NULL,
@@ -13,6 +14,7 @@ CREATE TABLE IF NOT EXISTS oauth_configs (
 );
 
 -- 2. Short-lived CSRF state tokens for OAuth 2.0 authorization redirects
+
 CREATE TABLE IF NOT EXISTS oauth_states (
   state TEXT PRIMARY KEY,
   redirect_uri TEXT NOT NULL,
@@ -21,6 +23,7 @@ CREATE TABLE IF NOT EXISTS oauth_states (
 );
 
 -- 3. Connected LinkedIn member identity and AES-256-GCM encrypted OAuth tokens
+
 CREATE TABLE IF NOT EXISTS oauth_tokens (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   author_urn TEXT NOT NULL,
@@ -40,6 +43,7 @@ CREATE TABLE IF NOT EXISTS oauth_tokens (
 
 -- 4. Scheduled posts and worker state machine
 -- Exact allowed statuses: scheduled, processing, published, failed
+
 CREATE TABLE IF NOT EXISTS posts (
   id TEXT PRIMARY KEY,
   author_urn TEXT NOT NULL,
@@ -71,6 +75,7 @@ CREATE INDEX IF NOT EXISTS idx_posts_dedupe
   ON posts(author_urn, content_hash, status);
 
 -- 5. Immutable audit log of every publish attempt, retry delay, and error
+
 CREATE TABLE IF NOT EXISTS post_attempts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   post_id TEXT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
@@ -90,6 +95,7 @@ CREATE INDEX IF NOT EXISTS idx_post_attempts_post
   ON post_attempts(post_id, attempt_number);
 
 -- 6. Structured application and background worker logs (secrets redacted)
+
 CREATE TABLE IF NOT EXISTS app_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   level TEXT NOT NULL CHECK (level IN ('debug', 'info', 'warn', 'error')),
