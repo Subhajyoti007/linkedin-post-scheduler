@@ -8,6 +8,7 @@ export const PROJECT_ROOT = path.resolve(__dirname, '..');
 /**
  * Parses a .env file without overriding already-set process.env variables.
  */
+
 function loadDotEnv(envPath) {
   if (!fs.existsSync(envPath)) return;
   const raw = fs.readFileSync(envPath, 'utf8');
@@ -46,6 +47,7 @@ function resolveProjectPath(targetPath) {
 /**
  * Loads application configuration from environment variables and .env file.
  */
+
 export function loadConfig(overrides = {}) {
   loadDotEnv(path.join(PROJECT_ROOT, '.env'));
 
