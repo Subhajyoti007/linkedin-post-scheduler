@@ -90,6 +90,17 @@ function extractErrorMessage(bodyText, status) {
   }
 }
 
+function decodeJwtPayload(jwt) {
+  try {
+    const parts = String(jwt || '').split('.');
+    if (parts.length < 2) return null;
+    const json = Buffer.from(parts[1], 'base64url').toString('utf8');
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * HTTP client for LinkedIn OAuth 2.0, OpenID /v2/userinfo, and REST /rest/posts.
  */
@@ -119,13 +130,21 @@ export class LinkedInClient {
     state,
     scopes = 'openid profile w_member_social'
   }) {
-    const url = new URL(`${this.oauthBaseUrl}/oauth/v2/authorization`);
-    url.searchParams.set('response_type', 'code');
-    url.searchParams.set('client_id', clientId);
-    url.searchParams.set('redirect_uri', redirectUri);
-    url.searchParams.set('state', state);
-    url.searchParams.set('scope', scopes);
-    return url.toString();
+    const normalizedScopes = String(scopes || 'openid profile w_member_social')
+      .trim()
+      .split(/[\s,]+/)
+      .filter(Boolean)
+      .join(' ');
+    const query = [
+      ['response_type', 'code'],
+      ['client_id', clientId],
+      ['redirect_uri', redirectUri],
+      ['state', state],
+      ['scope', normalizedScopes]
+    ]
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+      .join('&');
+    return `${this.oauthBaseUrl}/oauth/v2/authorization?${query}`;
   }
 
   async exchangeCodeForTokens({ code, clientId, clientSecret, redirectUri }) {
@@ -173,6 +192,7 @@ export class LinkedInClient {
     return {
       accessToken: data.access_token,
       refreshToken: data.refresh_token || null,
+      idToken: data.id_token || null,
       tokenType: data.token_type || 'Bearer',
       scope: data.scope || null,
       expiresAt: new Date(nowMs + expiresInSec * 1000).toISOString(),
@@ -223,7 +243,7 @@ export class LinkedInClient {
     };
   }
 
-  async getUserInfo(accessToken) {
+  async getUserInfo(accessToken, idToken = null) {
     const response = await this.#request(`${this.apiBaseUrl}/v2/userinfo`, {
       method: 'GET',
       headers: {
@@ -234,6 +254,23 @@ export class LinkedInClient {
 
     const text = await response.text();
     if (!response.ok) {
+      if (response.status === 403) {
+        if (idToken) {
+          const decoded = decodeJwtPayload(idToken);
+          if (decoded?.sub) {
+            return {
+              sub: decoded.sub,
+              authorUrn: `urn:li:person:${decoded.sub}`,
+              name: decoded.name || [decoded.given_name, decoded.family_name].filter(Boolean).join(' ') || null,
+              email: decoded.email || null,
+              picture: decoded.picture || null
+            };
+          }
+        }
+        const legacy = await this.#tryGetLegacyProfile(accessToken);
+        if (legacy) return legacy;
+      }
+
       throw new LinkedInApiError({
         message: extractErrorMessage(text, response.status),
         httpStatus: response.status,
@@ -259,6 +296,27 @@ export class LinkedInClient {
       name: profile.name || [profile.given_name, profile.family_name].filter(Boolean).join(' ') || null,
       email: profile.email || null,
       picture: profile.picture || null
+    };
+  }
+
+  async #tryGetLegacyProfile(accessToken) {
+    const response = await this.#request(`${this.apiBaseUrl}/v2/me`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json'
+      }
+    });
+    if (!response.ok) return null;
+    const me = JSON.parse(await response.text());
+    if (!me?.id) return null;
+    const name = [me.localizedFirstName, me.localizedLastName].filter(Boolean).join(' ') || null;
+    return {
+      sub: me.id,
+      authorUrn: `urn:li:person:${me.id}`,
+      name,
+      email: null,
+      picture: null
     };
   }
 

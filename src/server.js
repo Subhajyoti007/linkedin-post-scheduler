@@ -148,11 +148,13 @@ export class AppServer {
         clientSecret: body.clientSecret,
         redirectUri:
           body.redirectUri ||
-          `${this.baseUrl || `http://localhost:${this.port}`}/auth/linkedin/callback`
+          `${this.baseUrl || `http://localhost:${this.port}`}/auth/linkedin/callback`,
+        scopes: body.scopes
       });
       this.logger.info('oauth', 'OAUTH_CREDENTIALS_SAVED', 'Saved encrypted LinkedIn OAuth credentials.', {
         clientId: saved.clientId,
-        redirectUri: saved.redirectUri
+        redirectUri: saved.redirectUri,
+        scopes: saved.scopes
       });
       return sendJson(res, 200, { config: saved });
     }
@@ -185,7 +187,8 @@ export class AppServer {
       });
 
       this.logger.info('oauth', 'OAUTH_AUTHORIZE_REDIRECT', 'Redirecting user to LinkedIn OAuth consent.', {
-        redirectUri: oauthConfig.redirectUri
+        redirectUri: oauthConfig.redirectUri,
+        scopes: oauthConfig.scopes
       });
       return sendRedirect(res, authUrl);
     }
@@ -198,8 +201,12 @@ export class AppServer {
       const code = url.searchParams.get('code');
 
       if (oauthError) {
-        const msg = oauthErrorDesc || oauthError;
-        this.logger.warn('oauth', 'OAUTH_CALLBACK_DENIED', `LinkedIn OAuth denied: ${msg}`, {
+        const baseMsg = oauthErrorDesc || oauthError;
+        const msg =
+          oauthError === 'invalid_scope_error'
+            ? `${baseMsg}. Ensure "Sign In with LinkedIn using OpenID Connect" and "Share on LinkedIn" are added under Products in the LinkedIn Developer Portal (or match your app's Auth -> OAuth 2.0 scopes).`
+            : baseMsg;
+        this.logger.warn('oauth', 'OAUTH_CALLBACK_DENIED', `LinkedIn OAuth denied: ${baseMsg}`, {
           error: oauthError
         });
         return sendRedirect(res, `/?oauth=error&message=${encodeURIComponent(msg)}`);
@@ -238,7 +245,10 @@ export class AppServer {
           redirectUri: validState.redirectUri
         });
 
-        const profile = await this.linkedinClient.getUserInfo(tokenSet.accessToken);
+        const profile = await this.linkedinClient.getUserInfo(
+          tokenSet.accessToken,
+          tokenSet.idToken
+        );
         this.db.saveOAuthTokens({
           authorUrn: profile.authorUrn,
           memberSub: profile.sub,

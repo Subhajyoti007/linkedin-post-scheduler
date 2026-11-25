@@ -71,6 +71,12 @@
               <span class="hint">Add this exact URL in LinkedIn Developer Portal &rarr; Auth &rarr; Authorized redirect URLs.</span>
             </div>
 
+            <div class="field">
+              <label for="oauth-scopes">OAuth Scopes</label>
+              <input id="oauth-scopes" name="scopes" type="text" value="openid profile w_member_social" placeholder="openid profile w_member_social" required />
+              <span class="hint">Must match your app's Auth &rarr; OAuth 2.0 scopes (requires "Sign In with LinkedIn using OpenID Connect" + "Share on LinkedIn").</span>
+            </div>
+
             <div class="btn-row">
               <button type="submit" class="btn btn-secondary">Save Credentials</button>
               <button id="connect-oauth-btn" type="button" class="btn btn-primary" disabled>

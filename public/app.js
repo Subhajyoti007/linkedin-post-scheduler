@@ -21,6 +21,7 @@ const els = {
   clientSecret: document.getElementById('client-secret'),
   secretSavedHint: document.getElementById('secret-saved-hint'),
   redirectUri: document.getElementById('redirect-uri'),
+  oauthScopes: document.getElementById('oauth-scopes'),
   copyRedirectBtn: document.getElementById('copy-redirect-btn'),
   connectOAuthBtn: document.getElementById('connect-oauth-btn'),
   fillDemoBtn: document.getElementById('fill-demo-btn'),
@@ -127,6 +128,7 @@ async function loadOAuthStatus(populateInputs = false) {
     if (config.clientId) els.clientId.value = config.clientId;
     els.redirectUri.value =
       config.redirectUri || `${window.location.origin}/auth/linkedin/callback`;
+    els.oauthScopes.value = config.scopes || 'openid profile w_member_social';
   }
 
   els.secretSavedHint.classList.toggle('hidden', !config.hasClientSecret);
@@ -269,7 +271,8 @@ els.oauthForm.addEventListener('submit', async (e) => {
       body: JSON.stringify({
         clientId: els.clientId.value,
         clientSecret: els.clientSecret.value,
-        redirectUri: els.redirectUri.value
+        redirectUri: els.redirectUri.value,
+        scopes: els.oauthScopes.value
       })
     });
     els.clientSecret.value = '';

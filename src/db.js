@@ -114,6 +114,12 @@ export class AppDatabase {
   saveOAuthConfig({ clientId, clientSecret, redirectUri, scopes = 'openid profile w_member_social' }) {
     const cleanClientId = String(clientId || '').trim();
     const cleanRedirectUri = String(redirectUri || '').trim();
+    const cleanScopes =
+      String(scopes || 'openid profile w_member_social')
+        .trim()
+        .split(/[\s,]+/)
+        .filter(Boolean)
+        .join(' ') || 'openid profile w_member_social';
     if (!cleanClientId) throw new ValidationError('LinkedIn Client ID is required.');
     if (!cleanRedirectUri) throw new ValidationError('Redirect URI is required.');
 
@@ -159,7 +165,7 @@ export class AppDatabase {
           cleanClientId,
           secretEncrypted,
           cleanRedirectUri,
-          scopes,
+          cleanScopes,
           existing?.created_at || now,
           now
         );

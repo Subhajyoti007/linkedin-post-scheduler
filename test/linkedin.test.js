@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatCommentaryForLinkedIn, parseRetryAfterMs } from '../src/linkedin.js';
+import {
+  LinkedInClient,
+  formatCommentaryForLinkedIn,
+  parseRetryAfterMs
+} from '../src/linkedin.js';
 import { computeRetryDelayMs } from '../src/worker.js';
 import { redactSecrets } from '../src/logger.js';
 
@@ -60,4 +64,17 @@ test('redactSecrets scrubs credentials and Bearer tokens without hiding error co
   assert.equal(scrubbed.errorCode, 'TEMPORARY_HTTP_ERROR');
   assert.equal(scrubbed.httpStatus, 503);
   assert.equal(scrubbed.message, 'Failed with Bearer [REDACTED]');
+});
+
+test('buildAuthorizationUrl encodes OAuth scope spaces as %20 instead of +', () => {
+  const client = new LinkedInClient();
+  const authUrl = client.buildAuthorizationUrl({
+    clientId: 'test-client-id',
+    redirectUri: 'http://127.0.0.1:3000/auth/linkedin/callback',
+    state: 'abc123',
+    scopes: 'openid  profile, w_member_social'
+  });
+
+  assert.ok(authUrl.includes('scope=openid%20profile%20w_member_social'));
+  assert.equal(authUrl.includes('scope=openid+'), false);
 });

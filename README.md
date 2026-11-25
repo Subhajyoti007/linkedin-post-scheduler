@@ -119,7 +119,8 @@ The canonical SQL schema lives in [docs/schema.sql](docs/schema.sql) and is auto
    - **Share on LinkedIn** (`w_member_social` scope)
 3. Under the **Auth** tab:
    - Copy your **Client ID** and **Client Secret**.
-   - Add the Authorized Redirect URL: `http://localhost:3000/auth/linkedin/callback`
+   - Add the Authorized Redirect URL matching your browser origin (e.g., `http://127.0.0.1:3000/auth/linkedin/callback` or `http://localhost:3000/auth/linkedin/callback`).
+   - Verify under **OAuth 2.0 scopes** that `openid`, `profile`, and `w_member_social` are listed (avoid mixing legacy **Sign In with LinkedIn** `r_liteprofile` with OIDC scopes; if your app has custom scopes, adjust the **OAuth Scopes** field in the UI).
 
 ### 2. Configure Environment (`.env`)
 
