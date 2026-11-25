@@ -58,6 +58,7 @@ async function connectOAuthViaHttp(app) {
   assert.equal(saveRes.status, 200);
 
   // Start OAuth flow without auto-following final redirect so we can verify flow step-by-step
+  
   const authRes = await fetch(`${app.baseUrl}/auth/linkedin`, { redirect: 'manual' });
   assert.equal(authRes.status, 302);
   const mockAuthUrl = new URL(authRes.headers.get('location'));
@@ -77,6 +78,7 @@ test('E2E: OAuth security, encrypted token storage, CSRF state validation, and s
   const { app, cleanup } = await createTestApp();
   try {
     // Reject invalid/forged OAuth state
+    
     const badCb = await fetch(
       `${app.baseUrl}/auth/linkedin/callback?code=fake&state=invalid_csrf_state`,
       { redirect: 'manual' }
@@ -87,6 +89,7 @@ test('E2E: OAuth security, encrypted token storage, CSRF state validation, and s
     await connectOAuthViaHttp(app);
 
     // Ensure secrets are encrypted in SQLite and never exposed in API or logs
+    
     const statusRes = await fetch(`${app.baseUrl}/api/oauth/status`).then((r) => r.json());
     assert.equal(statusRes.connection.connected, true);
     assert.equal(statusRes.connection.profile.authorUrn, 'urn:li:person:mock_member_782');
@@ -102,6 +105,7 @@ test('E2E: OAuth security, encrypted token storage, CSRF state validation, and s
     assert.equal(rawTokenRow.access_token_encrypted.includes('mock_access_'), false);
 
     // Schedule a post slightly in the future
+    
     const scheduledAt = new Date(Date.now() + 180).toISOString();
     const createRes = await fetch(`${app.baseUrl}/api/posts`, {
       method: 'POST',
@@ -121,6 +125,7 @@ test('E2E: OAuth security, encrypted token storage, CSRF state validation, and s
     assert.equal(app.mockServer.createdPosts.length, 0);
 
     // Wait for background worker to publish at scheduled time
+    
     const published = await waitForCondition(async () => {
       const { post } = await fetch(`${app.baseUrl}/api/posts/${created.id}`).then((r) => r.json());
       return post.status === 'published' ? post : null;
@@ -181,6 +186,7 @@ test('E2E: Temporary LinkedIn errors trigger automatic retries with increasing d
     assert.equal(published.attempts[3].outcome, 'succeeded');
 
     // Verify strictly increasing retry delays (60ms -> 120ms -> 240ms)
+    
     const d1 = published.attempts[0].retryDelayMs;
     const d2 = published.attempts[1].retryDelayMs;
     const d3 = published.attempts[2].retryDelayMs;
@@ -190,6 +196,7 @@ test('E2E: Temporary LinkedIn errors trigger automatic retries with increasing d
     assert.ok(d2 > d1 && d3 > d2, 'Retry delays must strictly increase');
 
     // Verify only 1 post was created on LinkedIn despite 4 total HTTP attempts
+    
     assert.equal(app.mockServer.postRequests.length, 4);
     assert.equal(app.mockServer.createdPosts.length, 1);
   } finally {
@@ -206,6 +213,7 @@ test('E2E: Permanent error fails immediately and exhausted temporary retries mar
     await connectOAuthViaHttp(app);
 
     // Case A: Permanent 422 fails immediately on attempt 1
+    
     app.mockServer.setFaultPlan({
       permanentErrorStatus: 422,
       permanentErrorMessage: 'Duplicate post rejected by LinkedIn API'
@@ -229,6 +237,7 @@ test('E2E: Permanent error fails immediately and exhausted temporary retries mar
     assert.equal(failedPerm.attempts[0].outcome, 'skipped_duplicate');
 
     // Case B: Exhausting maxRetryAttempts (3) on temporary 429s marks post failed
+    
     app.mockServer.setFaultPlan({
       temporaryFailuresRemaining: 5,
       temporaryStatus: 429
@@ -271,6 +280,7 @@ test('E2E: Duplicate-post protection blocks double submits, duplicate content, c
     };
 
     // 1. Same Idempotency-Key returns deduplicated=true without inserting a second row
+    
     const r1 = await fetch(`${app.baseUrl}/api/posts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Idempotency-Key': 'same-key-123' },
@@ -290,6 +300,7 @@ test('E2E: Duplicate-post protection blocks double submits, duplicate content, c
     assert.equal(d2.post.id, d1.post.id);
 
     // 2. Different Idempotency-Key with identical active content is rejected with 409 Conflict
+    
     const r3 = await fetch(`${app.baseUrl}/api/posts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Idempotency-Key': 'different-key-456' },
@@ -300,6 +311,7 @@ test('E2E: Duplicate-post protection blocks double submits, duplicate content, c
     assert.equal(d3.code, 'DUPLICATE_POST');
 
     // 3. Concurrent workers racing to claim the same post publish it exactly once
+    
     const secondWorker = new PostWorker({
       db: app.db,
       linkedinClient: app.linkedinClient,
@@ -311,6 +323,7 @@ test('E2E: Duplicate-post protection blocks double submits, duplicate content, c
     assert.equal(app.mockServer.createdPosts.length, 1);
 
     // 4. Stale lock recovery marks interrupted processing posts failed rather than duplicating
+    
     const stuckPostId = 'stuck-post-1';
     const pastIso = new Date(Date.now() - 300000).toISOString();
     app.db.db
@@ -340,6 +353,7 @@ test('E2E: Worker automatically refreshes expired OAuth token before publishing'
     await connectOAuthViaHttp(app);
 
     // Force token expiry into the past while refresh_token remains valid
+    
     app.db.db
       .prepare("UPDATE oauth_tokens SET expires_at = '2020-01-01T00:00:00.000Z' WHERE id = 1")
       .run();
@@ -386,6 +400,7 @@ test('E2E: Serves UI assets, honors 429 Retry-After header, supports manual retr
     await connectOAuthViaHttp(app);
 
     // 429 with Retry-After: 1s overrides baseDelayMs (50ms) and maxRetryAttempts=2 exhausts -> failed
+    
     app.mockServer.setFaultPlan({
       temporaryFailuresRemaining: 1,
       temporaryStatus: 429,
@@ -414,12 +429,14 @@ test('E2E: Serves UI assets, honors 429 Retry-After header, supports manual retr
     assert.equal(app.mockServer.createdPosts.length, 1);
 
     // Published post cannot be re-queued
+    
     const invalidRetry = await fetch(`${app.baseUrl}/api/posts/${created.post.id}/retry`, {
       method: 'POST'
     });
     assert.equal(invalidRetry.status, 409);
 
     // Schedule a post that fails permanently, then manually retry and succeed
+    
     app.mockServer.setFaultPlan({
       permanentErrorStatus: 400,
       permanentErrorMessage: 'Temporary validation mismatch'
@@ -450,6 +467,7 @@ test('E2E: Serves UI assets, honors 429 Retry-After header, supports manual retr
     assert.equal(recovered.status, 'published');
 
     // Disconnect OAuth and verify subsequent schedule request is rejected
+    
     const disc = await fetch(`${app.baseUrl}/api/oauth/disconnect`, { method: 'POST' });
     assert.equal(disc.status, 200);
 
